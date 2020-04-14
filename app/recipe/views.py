@@ -7,13 +7,16 @@ from core.models import Tag
 from recipe import serializers
 
 
-class TagViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+class TagViewSet(viewsets.GenericViewSet,
+                 mixins.ListModelMixin,
+                 mixins.CreateModelMixin):
     """
     Manage tags in the database.
-    ListModelMixin: rest_framework feature.
-    For this API I don't want update/create/delete
+    ListModelMixin, CreateModelMixin: rest_framework feature
+    which allows specific functionality for the ViewSet.
+    For this API I don't want update/delete
     functionality hence I use ListModelMixin - GenericView
-    combination to just list the tags.
+    and CreateModelMixin combination to just list and create the tags.
     """
 
     """Requires that token authentication is used"""
@@ -40,3 +43,17 @@ class TagViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         """User is assigned to the request since authentication is required"""
         return self.queryset.filter(user=self.request.user).order_by('-name')
+
+    def perform_create(self, serializer):
+        """
+        Assign a newly created tag to the correct user.
+        Similar to the get_queryset function.
+        This function allows to hook into the create
+        process when creating an object.
+        So, when I do create an object in the ViewSet,
+        this function will be invoked and the validated serializer
+        will be passed in as a serializer argument and then I can
+        perform any modifications here that I want to create process.
+        Here I just set the user to the authenticated user.
+        """
+        serializer.save(user=self.request.user)
