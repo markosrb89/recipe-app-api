@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, \
                                        PermissionsMixin
+from django.conf import settings
 
 
 class UserManager(BaseUserManager):
@@ -38,3 +39,26 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
+
+
+class Tag(models.Model):
+    """Tag to be used for a recipe"""
+    name = models.CharField(max_length=255)
+    """
+    User foreign key. Instead of referencing User model
+    directly, here is used the best practice method of
+    retrieving the auth User model setting from main Django
+    settings file.
+    -> models.ForeignKey(
+        MODEL_THAT_FOREIGN_KEY_IS_BASED_OFF,
+        WHAT_HAPPENS_WHITH_THE_TAG_WHEN_USER_IS_DELETED
+    )
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+
+    # String representation of the model
+    def __str__(self):
+        return self.name
