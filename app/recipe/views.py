@@ -7,35 +7,31 @@ from core.models import Tag, Ingredient
 from recipe import serializers
 
 
-class TagViewSet(viewsets.GenericViewSet,
-                 mixins.ListModelMixin,
-                 mixins.CreateModelMixin):
+class BaseRecipeAttrViewSet(viewsets.GenericViewSet,
+                            mixins.ListModelMixin,
+                            mixins.CreateModelMixin):
     """
-    Manage tags in the database.
+    Base viewset for user owned recipe attributes
     ListModelMixin, CreateModelMixin: rest_framework feature
     which allows specific functionality for the ViewSet.
     For this API I don't want update/delete
     functionality hence I use ListModelMixin - GenericView
-    and CreateModelMixin combination to just list and create the tags.
+    and CreateModelMixin combination to just list and
+    create the tags/ingredients.
     """
 
     """Requires that token authentication is used"""
     authentication_classes = (TokenAuthentication,)
     """Requires that user is authenticated to use the API"""
     permission_classes = (IsAuthenticated,)
-    """
-    When GenericViewSet and ListModelMixin are used,
-    I need to provide the queryset that I want to return.
-    """
-    queryset = Tag.objects.all()
-    serializer_class = serializers.TagSerializer
 
     def get_queryset(self):
         """
         Override get_queryset function to return objects for the current
         authenticated user only.
         When ViewSet is invoked from a url, it will call get_queryset
-        to retrieve these objects (queryset = Tag.objects.all()) and here
+        to retrieve these objects (queryset = Tag.objects.all() ||
+        Ingredient.objects.all()) and here
         I can apply any custom filtering like limiting it to
         the authenticated user, so whatever I return here it
         will be displayed in the API.
@@ -46,7 +42,7 @@ class TagViewSet(viewsets.GenericViewSet,
 
     def perform_create(self, serializer):
         """
-        Assign a newly created tag to the correct user.
+        Assign a newly created tag/ingredient to the correct user.
         Similar to the get_queryset function.
         This function allows to hook into the create
         process when creating an object.
@@ -59,19 +55,17 @@ class TagViewSet(viewsets.GenericViewSet,
         serializer.save(user=self.request.user)
 
 
-class IngredientViewSet(viewsets.GenericViewSet,
-                        mixins.ListModelMixin,
-                        mixins.CreateModelMixin):
+class TagViewSet(BaseRecipeAttrViewSet):
+    """
+    Manage tags in the database.
+    When GenericViewSet and ListModelMixin are used,
+    I need to provide the queryset that I want to return.
+    """
+    queryset = Tag.objects.all()
+    serializer_class = serializers.TagSerializer
+
+
+class IngredientViewSet(BaseRecipeAttrViewSet):
     """Manage ingredients in the database"""
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
     queryset = Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
-
-    def get_queryset(self):
-        """Return objects for the current authenticated user"""
-        return self.queryset.filter(user=self.request.user).order_by('-name')
-
-    def perform_create(self, serializer):
-        """Create a new ingredient"""
-        serializer.save(user=self.request.user)
